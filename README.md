@@ -14,6 +14,8 @@ Inject plugin settings into project in `build.sbt`:
 
     seq(webSettings :_*)
 		
+or in case if you're using full configuration `webSettings` are `com.github.siasia.WebPlugin.webSettings`.
+		
 Add other required stuff like `web.xml`, properties and source code.
 		
 This will add commands required to run web application. Invoke `jetty-run`(as in sbt 0.7) to run web application:
