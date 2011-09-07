@@ -18,6 +18,7 @@ object WebBuild extends Build {
 	sharedSettings
 	
 	lazy val rootOnlySettings = Seq(
+		version := "0.1.1",
 		sbtPlugin := true,
 		ScriptedPlugin.scriptedBufferLog := false,
 		publishLocal <<= (publishLocal in web, publishLocal) map {(_, p) => p },
@@ -28,6 +29,7 @@ object WebBuild extends Build {
 	lazy val webSettings = Defaults.defaultSettings ++ webOnlySettings ++ sharedSettings
 
 	lazy val webOnlySettings = Seq(
+		version <<= sbtVersion("0.1.1-"+_),
 		organization := "com.github.siasia.sbt",
 		name := "web-app",
 		libraryDependencies <++= sbtVersion {
@@ -48,8 +50,6 @@ object WebBuild extends Build {
 	)
 
 	lazy val sharedSettings = Seq(
-		version := "0.1.1",
-		projectID <<= (projectID, sbtVersion, scalaVersion) { Defaults.sbtPluginExtra(_, _, _)  },
 		publishMavenStyle := true,
 		publishTo := Some(Resolver.file("Local", Path.userHome / "projects" / "siasia.github.com" / "maven2" asFile)(Patterns(true, Resolver.mavenStyleBasePattern))),
 		resolvers += Resolver.url("Typesafe repository", new java.net.URL("http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns),
