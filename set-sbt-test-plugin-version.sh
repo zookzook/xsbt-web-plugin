@@ -5,6 +5,6 @@ if [ -z "$1" ]; then
 		exit
 fi
 PLUGIN_VERSION=$1
-for f in $(find src/sbt-test -path '*plugins/build.sbt'); do
-		echo "libraryDependencies += \"com.github.siasia\" %% \"xsbt-web-plugin\" % \"$PLUGIN_VERSION\"" > $f
+for f in $(find src/sbt-test -path '*project'); do
+		echo "addSbtPlugin(\"com.github.siasia\" % \"xsbt-web-plugin\" % \"$PLUGIN_VERSION\")" > $f/plugins.sbt
 done

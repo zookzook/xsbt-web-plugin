@@ -48,9 +48,11 @@ object WebBuild extends Build {
 	)
 
 	lazy val sharedSettings = Seq(
-		version <<= sbtVersion("0.1.1-"+_),
+		version := "0.1.1",
+		projectID <<= (projectID, sbtVersion, scalaVersion) { Defaults.sbtPluginExtra(_, _, _)  },
 		publishMavenStyle := true,
 		publishTo := Some(Resolver.file("Local", Path.userHome / "projects" / "siasia.github.com" / "maven2" asFile)(Patterns(true, Resolver.mavenStyleBasePattern))),
+		resolvers += Resolver.url("Typesafe repository", new java.net.URL("http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/"))(Resolver.defaultIvyPatterns),
 		libraryDependencies <+= sbtVersion("org.scala-tools.sbt" %% "classpath" % _ % "provided"),
 		scalacOptions += "-deprecation"
 	)

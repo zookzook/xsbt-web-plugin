@@ -94,7 +94,7 @@ object WebPlugin extends Plugin {
 		instances.get(currentRef) match {
 			case Some(_) => state
 			case None =>
-				val result = Project.evaluateTask(jettyConfiguration in Compile, state) getOrElse error("Failed to get jetty configuration.")
+				val result = Project.evaluateTask(jettyConfiguration in Compile, state) getOrElse sys.error("Failed to get jetty configuration.")
 				val conf = EvaluateTask.processResult(result, CommandSupport.logger(state))
 				val instance = new JettyRunner(conf)			
 				state.addExitHook(instance.runBeforeExiting).put(jettyInstances, instances + (currentRef -> instance))
@@ -116,7 +116,7 @@ object WebPlugin extends Plugin {
 
 	def jettyRunAction(state: State): State = {
 		val withInstance = addJettyInstance(state)
-		val result = Project.evaluateTask(prepareWebapp, withInstance) getOrElse error("Cannot prepare webapp.")
+		val result = Project.evaluateTask(prepareWebapp, withInstance) getOrElse sys.error("Cannot prepare webapp.")
 		EvaluateTask.processResult(result, CommandSupport.logger(withInstance))
 		getInstance(withInstance).apply()
 		withInstance
@@ -129,14 +129,14 @@ object WebPlugin extends Plugin {
 	val webSettings: Seq[Project.Setting[_]] = Seq(
 		ivyConfigurations += jettyConf,
 		temporaryWarPath <<= (target){ (target) => target / "webapp" },
-		webappResources <<= (sourceDirectory in Runtime, defaultExcludes) {
+		webappResources <<= (sourceDirectory in Runtime, excludeFilter in webappResources) {
 			(sd, defaultExcludes) =>
 				sd / "webapp"
 		},
-		watchWebappResources <<= (webappResources, defaultExcludes) map { (rs, de) => rs.descendentsExcept("*", de).get },
-		watchSources <<= Seq(watchSources, watchWebappResources).join.map { _.map(_.flatten.distinct) },
+		watchWebappResources <<= (webappResources, excludeFilter in watchWebappResources) map { (rs, de) => rs.descendentsExcept("*", de).get },
+		watchSources <<= Seq(watchSources, watchWebappResources).join.map { _.flatten.distinct },
 		webappUnmanaged := PathFinder.empty,
-		prepareWebapp <<= (copyResources in Runtime, webappResources, temporaryWarPath, jettyClasspaths, webappUnmanaged, defaultExcludes, streams) map {
+		prepareWebapp <<= (copyResources in Runtime, webappResources, temporaryWarPath, jettyClasspaths, webappUnmanaged, excludeFilter in prepareWebapp, streams) map {
 			(r, w, wp, cp, wu, excludes, s) =>
 				prepareWebappTask(w, wp, cp.classpath, wu, excludes, s.log) },
 		configuration in packageWar := Compile,
