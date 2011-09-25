@@ -18,7 +18,7 @@ object WebBuild extends Build {
 	sharedSettings
 	
 	lazy val rootOnlySettings = Seq(
-		version := "0.1.1",
+		version := "0.1.2",
 		sbtPlugin := true,
 		ScriptedPlugin.scriptedBufferLog := false,
 		publishLocal <<= (publishLocal in web, publishLocal) map {(_, p) => p },
@@ -29,7 +29,7 @@ object WebBuild extends Build {
 	lazy val webSettings = Defaults.defaultSettings ++ webOnlySettings ++ sharedSettings
 
 	lazy val webOnlySettings = Seq(
-		version <<= sbtVersion("0.1.1-"+_),
+		version <<= sbtVersion("0.1.2-"+_),
 		organization := "com.github.siasia.sbt",
 		name := "web-app",
 		libraryDependencies <++= sbtVersion {

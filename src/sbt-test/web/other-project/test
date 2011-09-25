@@ -1,0 +1,18 @@
+> ++ 2.8.0
+
+> jetty-run
+> check-page Hello from root project!
+
+> jetty-run-other-project sub
+> project sub
+> check-page Hello from sub project!
+
+> project root
+> check-page Hello from root project!
+> jetty-stop-other-project root
+-> check-page Hello from root project!
+
+> project sub
+> check-page Hello from sub project!
+> jetty-stop
+-> check-page Hello from sub project!

@@ -25,7 +25,7 @@ object WebPlugin extends Plugin {
 	val jettyConfFiles = SettingKey[JettyConfFiles]("jetty-conf-files")
 	final case class JettyConfFiles(env: Option[File], webDefaultXml: Option[File])
 	val jettyConfiguration = TaskKey[JettyConfiguration]("jetty-configuration")
-	val jettyInstances = AttributeKey[Map[ProjectRef,JettyRunner]]("jetty-instance")
+	val jettyInstances = AttributeKey[Map[String,JettyRunner]]("jetty-instance")
 
 	def prepareWebappTask(webappContents: PathFinder, warPath: File, classpath: PathFinder, ignore: PathFinder, defaultExcludes: FileFilter, slog: Logger): Seq[(File, String)] = {
 		val log = slog.asInstanceOf[AbstractLogger]    
@@ -87,44 +87,63 @@ object WebPlugin extends Plugin {
 			}
 	}
 
-	def addJettyInstance(state: State): State = {
+	private implicit def refToString(ref: ProjectReference): String = ref match {
+		case LocalProject(result) => result
+		case ProjectRef(_, result) => result
+		case _ => sys.error("Unable to extract project name")
+	}
+	private implicit def stringToRef(projectId: String): ProjectReference = LocalProject(projectId)
+
+	def addJettyInstance(ref: ProjectReference)(state: State): State = {
 		val extracted: Extracted = Project.extract(state)
 		import extracted._
 		val instances = state.get(jettyInstances) getOrElse(Map())
-		instances.get(currentRef) match {
+		instances.get(ref) match {
 			case Some(_) => state
 			case None =>
-				val result = Project.evaluateTask(jettyConfiguration in Compile, state) getOrElse sys.error("Failed to get jetty configuration.")
+				val result = Project.evaluateTask(jettyConfiguration in (ref, Compile), state) getOrElse sys.error("Failed to get jetty configuration.")
 				val conf = EvaluateTask.processResult(result, CommandSupport.logger(state))
 				val instance = new JettyRunner(conf)			
-				state.addExitHook(instance.runBeforeExiting).put(jettyInstances, instances + (currentRef -> instance))
+				state.addExitHook(instance.runBeforeExiting).put(jettyInstances, instances + (refToString(ref) -> instance))
 		}
 		
 	}
 
-	def getInstance(state: State): JettyRunner = {
+	def getInstance(ref: ProjectReference)(state: State): JettyRunner = {
 		val extracted: Extracted = Project.extract(state)
 		import extracted._
-		state.get(jettyInstances).get.apply(currentRef)
+		state.get(jettyInstances).get.apply(ref)
 	}
 
-	def withJettyInstance(action: (JettyRunner) => Unit)(state: State): State = {
-		val withInstance = addJettyInstance(state)
-		action(getInstance(withInstance))
+	def withJettyInstance(ref: ProjectReference)(action: (JettyRunner) => Unit)(state: State): State = {
+		val withInstance = addJettyInstance(ref)(state)
+		action(getInstance(ref)(withInstance))
 		withInstance
 	}
 
-	def jettyRunAction(state: State): State = {
-		val withInstance = addJettyInstance(state)
-		val result = Project.evaluateTask(prepareWebapp, withInstance) getOrElse sys.error("Cannot prepare webapp.")
+	def jettyRunAction(state: State, projectId: String): State = {
+		val ref = LocalProject(projectId)
+		val withInstance = addJettyInstance(ref)(state)
+		val result = Project.evaluateTask(prepareWebapp in ref, withInstance) getOrElse sys.error("Cannot prepare webapp.")
 		EvaluateTask.processResult(result, CommandSupport.logger(withInstance))
-		getInstance(withInstance).apply()
+		getInstance(ref)(withInstance).apply()
 		withInstance
+	}
+
+	def jettyRunAction(state: State): State = withCurrentRef(state)((state, ref) => jettyRunAction(state, ref))
+
+	def withCurrentRef(state: State)(action: (State, ProjectReference) => State): State = {
+		val extracted: Extracted = Project.extract(state)
+		import extracted._
+		action(state, currentRef.project)
 	}
 
 	val jettyRun: Command = Command.command("jetty-run")(jettyRunAction)
-	val jettyStop: Command = Command.command("jetty-stop")(withJettyInstance(_.stop()))
-	val jettyReload: Command = Command.command("jetty-reload")(withJettyInstance(_.reload()))
+	val jettyRunOtherProject: Command = Command.single("jetty-run-other-project")(jettyRunAction)
+	val jettyStop: Command = Command.command("jetty-stop")(withCurrentRef(_)((state, ref) => withJettyInstance(ref)(_.stop())(state)))
+	val jettyStopOtherProject: Command = Command.single("jetty-stop-other-project")((state, projectId) => withJettyInstance(projectId)(_.stop())(state))
+	val jettyReload: Command = Command.command("jetty-reload")(withCurrentRef(_)((state, ref) => withJettyInstance(ref)(_.reload())(state)))
+	val jettyReloadOtherProject: Command = Command.single("jetty-reload-other-project")((state, projectId) => withJettyInstance(projectId)(_.reload())(state))
 
 	val webSettings: Seq[Project.Setting[_]] = Seq(
 		ivyConfigurations += jettyConf,
@@ -149,6 +168,6 @@ object WebPlugin extends Plugin {
 		jettyPort := JettyRunner.DefaultPort,
 		jettyConfFiles := JettyConfFiles(None, None),
 		jettyConfiguration <<= jettyConfigurationTask,
-		commands ++= Seq(jettyRun, jettyStop, jettyReload)
+		commands ++= Seq(jettyRun, jettyRunOtherProject, jettyStop, jettyStopOtherProject, jettyReload, jettyReloadOtherProject)
 	) ++ packageTasks(packageWar, packageWarTask)
 }
