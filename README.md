@@ -2,6 +2,10 @@
 
 ## News
 
+**October 16, 2014**
+
+Version 1.0.0 has been released.  See the [1.0.0 tag](https://github.com/earldouglas/xsbt-web-plugin/releases/tag/1.0.0).
+
 **July 13, 2014**
 
 Preview the upcoming changes in version 1.0.0 - see the [1.0 branch](https://github.com/earldouglas/xsbt-web-plugin/tree/1.0#quick-reference).
