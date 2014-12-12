@@ -1,4 +1,6 @@
 ### Changelog
 
-* Support for using a custom config file for Tomcat ([6c4df5](https://github.com/earldouglas/xsbt-web-plugin/commit/6c4df5560af47856dd1c5b799bf58e8d0de73865))
+*This is a patch release for the 0.9 minor version.*
+
+* Support a custom config file for Tomcat ([6c4df5](https://github.com/earldouglas/xsbt-web-plugin/commit/6c4df5560af47856dd1c5b799bf58e8d0de73865))
 * Support files with a leading dot ([#205](https://github.com/earldouglas/xsbt-web-plugin/pull/205))
